@@ -2,7 +2,10 @@ module gateway_service
 
 go 1.23.1
 
-require google.golang.org/grpc v1.66.2
+require (
+	github.com/gorilla/websocket v1.5.3
+	google.golang.org/grpc v1.66.2
+)
 
 require (
 	golang.org/x/net v0.26.0 // indirect

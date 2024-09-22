@@ -2,6 +2,7 @@ package main
 
 import (
 	"gateway_service/api/controllers"
+	"gateway_service/api/controllers/sockets"
 	"gateway_service/config"
 	"gateway_service/internal"
 	"gateway_service/routes"
@@ -18,10 +19,11 @@ func main() {
 	}
 
 	userController := controllers.NewUserController(userServiceClient)
+	sockerController := sockets.NewSocketController(userServiceClient)
 
 	router := http.NewServeMux()
 
-	routes.RegisterControllers(router, userController)
+	routes.RegisterControllers(router, userController, sockerController)
 
 	log.Print("Server started on address: ", cfg.ServerPort)
 
