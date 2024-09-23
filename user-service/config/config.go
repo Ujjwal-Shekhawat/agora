@@ -7,7 +7,7 @@ type ServiceConfig struct {
 }
 
 func LoadConfig() *ServiceConfig {
-	return &ServiceConfig{ServerPort: getEnvOrDefault("USER_SERVICE_PORT", "localhost:5051")}
+	return &ServiceConfig{ServerPort: getEnvOrDefault("SERVICE_PORT", ":5051")}
 }
 
 func getEnvOrDefault(key, defaultValue string) string {

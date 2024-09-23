@@ -9,8 +9,8 @@ type Config struct {
 
 func LoadConfig() *Config {
 	return &Config{
-		UserServiceAddr: getEnvOrDefault("USER_SERVICE_ADDRESS", "localhost:5051"),
-		ServerPort:      getEnvOrDefault("SERVICE_PORT", "localhost:8080"),
+		UserServiceAddr: getEnvOrDefault("USER_SERVICE_ADDRESS", ":5051"),
+		ServerPort:      getEnvOrDefault("SERVICE_PORT", ":8080"),
 	}
 }
 
