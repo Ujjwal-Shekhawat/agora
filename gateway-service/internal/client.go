@@ -4,6 +4,7 @@ import (
 	"context"
 	proto "proto/user"
 	"time"
+	"user_service/models"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -29,6 +30,19 @@ func (c *UserServiceClientStruct) GetUserDetails(userId string) (*proto.CreateUs
 
 	req := &proto.GetUserReq{UserID: userId}
 	res, err := c.client.GetUser(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func (c *UserServiceClientStruct) CreateNewUser(user *models.User) (*proto.CreateUserResponse, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	req := &proto.User{Name: user.Name, Email: user.Email}
+	res, err := c.client.CreateUser(ctx, req)
 	if err != nil {
 		return nil, err
 	}
