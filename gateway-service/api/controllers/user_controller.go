@@ -5,6 +5,7 @@ import (
 	"gateway_service/internal"
 	"log"
 	"net/http"
+	"user_service/models"
 )
 
 type UserController struct {
@@ -30,6 +31,27 @@ func (controller *UserController) getUserInfo(w http.ResponseWriter, r *http.Req
 	json.NewEncoder(w).Encode(response)
 }
 
+func (Controller *UserController) createUser(w http.ResponseWriter, r *http.Request) {
+	var user models.User
+	err := json.NewDecoder(r.Body).Decode(&user)
+	if err != nil {
+		response := map[string]interface{}{"Message": "Something went wrong", "status": http.StatusInternalServerError}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	pres, err := Controller.userServiceClient.CreateNewUser(&user)
+	if err != nil {
+		response := map[string]interface{}{"Message": "Something went wrong", "status": http.StatusInternalServerError}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	response := map[string]interface{}{"Message": pres.Message, "status": http.StatusOK}
+	json.NewEncoder(w).Encode(response)
+}
+
 func (u *UserController) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/user/{uid}", u.getUserInfo)
+	mux.HandleFunc("GET /user/{uid}", u.getUserInfo)
+	mux.HandleFunc("POST /user", u.createUser)
 }
