@@ -1,0 +1,23 @@
+services:
+  gateway-service:
+    build:
+      context: ./
+      dockerfile: Dockerfile.gateway_service     
+    ports:
+      - "8080:8080"               
+    networks:
+      - kai
+
+  user-service:
+    build:
+      context: ./    
+      dockerfile: Dockerfile.user_service     
+    ports:
+      - "5051:5051"               
+    networks:
+      - kai
+    depends_on:
+      - gateway-service              
+
+networks:
+  kai:

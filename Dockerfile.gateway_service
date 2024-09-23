@@ -1,0 +1,20 @@
+FROM golang:1.23 AS builder
+
+WORKDIR /app
+
+COPY ./go.work ./go.work.sum ./
+COPY ./gateway-service ./gateway-service/
+COPY ./user-service ./user-service/
+COPY ./proto/ ./proto
+
+RUN go mod download
+
+RUN cd ./gateway-service && go build -o bin/main ./main.go
+
+FROM gcr.io/distroless/base
+
+COPY --from=builder /app/gateway-service/bin/main /app/bin/main
+
+EXPOSE 8080
+
+ENTRYPOINT ["/app/bin/main"]
