@@ -3,8 +3,12 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.gateway_service     
+    container_name: gateway_service
     ports:
       - "8080:8080"               
+    environment:
+      SERVICE_PORT: :8080
+      USER_SERVICE_ADDRESS: user_service:5051
     networks:
       - kai
     depends_on:
@@ -15,10 +19,14 @@ services:
     build:
       context: ./    
       dockerfile: Dockerfile.user_service     
+    container_name: user_service
     ports:
       - "5051:5051"               
     networks:
       - kai
+    environment:
+      SERVICE_PORT: :5051
+      CASSANDRA_CLUSTER: cassandra1,cassandra2,cassandra3
     depends_on:
       gateway-service:    
         condition: service_started
