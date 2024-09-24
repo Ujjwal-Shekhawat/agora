@@ -1,0 +1,120 @@
+services:
+  gateway-service:
+    build:
+      context: ./
+      dockerfile: Dockerfile.gateway_service     
+    container_name: gateway_service
+    ports:
+      - "8080:8080"               
+    environment:
+      SERVICE_PORT: :8080
+      USER_SERVICE_ADDRESS: user_service:5051
+    networks:
+      - kai
+    depends_on:
+      cassandra3:
+        condition: service_started
+
+  user-service:
+    build:
+      context: ./    
+      dockerfile: Dockerfile.user_service     
+    container_name: user_service
+    ports:
+      - "5051:5051"               
+    networks:
+      - kai
+    environment:
+      SERVICE_PORT: :5051
+      CASSANDRA_CLUSTER: cassandra1,cassandra2,cassandra3
+    depends_on:
+      gateway-service:    
+        condition: service_started
+      cassandra3:
+        condition: service_started  
+          
+  cassandra1: 
+    image: cassandra:latest 
+    container_name: cassandra1  
+    hostname: cassandra1 
+    networks: 
+      - kai 
+    ports: 
+      - "9042:9042" 
+    volumes:
+      - cassandra_data1:/var/lib/cassandra
+    restart: unless-stopped
+    environment: &environment  
+        CASSANDRA_SEEDS: "cassandra1,cassandra2"
+        CASSANDRA_CLUSTER_NAME: TestCluster
+        CASSANDRA_DC: DC1
+        CASSANDRA_RACK: RACK1
+        CASSANDRA_ENDPOINT_SNITCH: GossipingPropertyFileSnitch
+        CASSANDRA_NUM_TOKENS: 128
+
+  cassandra2: 
+    image: cassandra:latest 
+    container_name: cassandra2
+    hostname: cassandra2
+    networks:
+      - kai
+    ports:
+      - "9043:9042"
+    volumes:
+      - cassandra_data2:/var/lib/cassandra
+    restart: unless-stopped
+    environment: *environment
+    depends_on:
+      cassandra1:
+        condition: service_started
+
+  cassandra3:
+    image: cassandra:latest
+    container_name: cassandra3
+    hostname: cassandra3
+    networks:
+      - kai
+    ports:
+      - "9044:9042"
+    volumes:
+      - cassandra_data3:/var/lib/cassandra
+    restart: unless-stopped
+    environment: *environment
+    depends_on:
+      cassandra2:
+        condition: service_started
+
+  cassandra1-init:
+    image: cassandra:latest
+    container_name: cassandra1-init
+    depends_on:
+      - cassandra1
+    entrypoint: ["sh", "-c", "until cqlsh cassandra1 -e 'DESCRIBE KEYSPACES'; do sleep 1; done; cqlsh cassandra1 -f /cql-scripts/init.cql"]
+    volumes:
+      - ./cql-scripts:/cql-scripts
+    networks:
+      - kai
+
+# Change the volumes to you local path
+volumes:
+  cassandra_data1:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: /home/kamisama/Desktop/cassandra/cassandra1
+  cassandra_data2:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: /home/kamisama/Desktop/cassandra/cassandra2
+  cassandra_data3:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: /home/kamisama/Desktop/cassandra/cassandra3
+
+networks:
+  kai:

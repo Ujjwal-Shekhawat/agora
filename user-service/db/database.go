@@ -1,14 +1,17 @@
 package db
 
 import (
+	"strings"
 	"time"
+	"user_service/config"
 
 	"github.com/gocql/gocql"
 )
 
 func DatabaseSession() (*gocql.Session, error) {
-	cluster := gocql.NewCluster("localhost:9042", "localhost:9043", "localhost:9044") // Fetch from config later
-	cluster.Keyspace = "users"                                                        // this can be friends as well
+	cfg := config.LoadConfig()
+	cluster := gocql.NewCluster(strings.Split(cfg.CassandraCluster, ",")...) // Fetch from config later
+	cluster.Keyspace = "users"                                               // this can be friends as well
 	cluster.Consistency = gocql.Quorum
 	cluster.ProtoVersion = 4
 
