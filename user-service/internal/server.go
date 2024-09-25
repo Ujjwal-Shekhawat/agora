@@ -30,18 +30,8 @@ func (s *server) CreateUser(ctx context.Context, in *proto.User) (*proto.CreateU
 
 	name, email := in.Name, in.Email
 
-	session, err := db.DatabaseSession()
-	if err != nil {
-		response_proto.Message = "Error creating user"
-		response_proto.StatusCode = 13
-		log.Println("Connection error", err.Error())
-		return response_proto, err
-	}
-	defer session.Close()
-
-	// Make a call to database to store user details (possibly implement db logic somewhere else please)
 	var query string = "INSERT INTO users (user_id, user_name, user_email) VALUES (uuid(), ?, ?);"
-	if err := session.Query(query, name, email).Exec(); err != nil {
+	if err := db.ExecQuery(query, name, email); err != nil {
 		response_proto.Message = "Error creating user"
 		response_proto.StatusCode = 13
 		log.Println("Exec error", err.Error())

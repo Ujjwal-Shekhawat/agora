@@ -2,11 +2,38 @@ package db
 
 import (
 	"strings"
+	"sync"
 	"time"
 	"user_service/config"
 
 	"github.com/gocql/gocql"
 )
+
+// Make this readonly later by making its methods exported later
+type dbSession struct {
+	session *gocql.Session
+	closed  bool
+}
+
+var mu sync.Mutex
+
+var session *dbSession = &dbSession{
+	session: nil,
+	closed:  true,
+}
+
+func InitSession() error {
+	dbSession, err := DatabaseSession()
+	if err != nil {
+		return err
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+	session.session = dbSession
+	session.closed = false
+	return nil
+}
 
 func DatabaseSession() (*gocql.Session, error) {
 	cfg := config.LoadConfig()
@@ -33,4 +60,11 @@ func DatabaseSession() (*gocql.Session, error) {
 	}
 
 	return session, nil
+}
+
+func ExecQuery(query string, queryParams ...interface{}) error {
+	if err := session.session.Query(query, queryParams...).Exec(); err != nil {
+		return err
+	}
+	return nil
 }
