@@ -2,9 +2,9 @@ package internal
 
 import (
 	"context"
+	"log"
 	proto "proto/user"
 	"time"
-	"user_service/models"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -24,11 +24,11 @@ func GetUserServiceClient(addr string) (*UserServiceClientStruct, error) {
 	}, nil
 }
 
-func (c *UserServiceClientStruct) GetUserDetails(userId string) (*proto.CreateUserResponse, error) {
+func (c *UserServiceClientStruct) GetUserDetails(name string) (*proto.ServerResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	req := &proto.GetUserReq{UserID: userId}
+	req := &proto.GetUserReq{Name: name}
 	res, err := c.client.GetUser(ctx, req)
 	if err != nil {
 		return nil, err
@@ -37,12 +37,27 @@ func (c *UserServiceClientStruct) GetUserDetails(userId string) (*proto.CreateUs
 	return res, nil
 }
 
-func (c *UserServiceClientStruct) CreateNewUser(user *models.User) (*proto.CreateUserResponse, error) {
+func (c *UserServiceClientStruct) CreateNewUser(user *proto.User) (*proto.ServerResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	req := &proto.User{Name: user.Name, Email: user.Email}
+	log.Println(user.Name, user.Email, user.Password)
+
+	req := &proto.User{Name: user.Name, Email: user.Email, Password: user.Password}
 	res, err := c.client.CreateUser(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func (c *UserServiceClientStruct) LoginUser(login *proto.LoginReq) (*proto.ServerResponse, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	req := &proto.LoginReq{Name: login.Name, Password: login.Password}
+	res, err := c.client.Login(ctx, req)
 	if err != nil {
 		return nil, err
 	}

@@ -9,10 +9,16 @@ services:
     environment:
       SERVICE_PORT: :8080
       USER_SERVICE_ADDRESS: user_service:5051
+      VAULT_HOST: vault:8200
+      KVSTORE_NAME: signing_key
+      KVPATH_NAME: keys
+      VAULT_TOKEN: ${VAULT_TOKEN}
     networks:
       - kai
     depends_on:
       cassandra3:
+        condition: service_healthy
+      vault:
         condition: service_started
 
   user-service:
@@ -27,11 +33,14 @@ services:
     environment:
       SERVICE_PORT: :5051
       CASSANDRA_CLUSTER: cassandra1,cassandra2,cassandra3
+    restart: unless-stopped
     depends_on:
       gateway-service:    
         condition: service_started
       cassandra3:
-        condition: service_started  
+        condition: service_healthy  
+      vault:
+        condition: service_started
           
   cassandra1: 
     image: cassandra:latest 
@@ -44,6 +53,11 @@ services:
     volumes:
       - cassandra_data1:/var/lib/cassandra
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'DESCRIBE KEYSPACES' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
     environment: &environment  
         CASSANDRA_SEEDS: "cassandra1,cassandra2"
         CASSANDRA_CLUSTER_NAME: TestCluster
@@ -64,6 +78,11 @@ services:
       - cassandra_data2:/var/lib/cassandra
     restart: unless-stopped
     environment: *environment
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'DESCRIBE KEYSPACES' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
     depends_on:
       cassandra1:
         condition: service_started
@@ -80,6 +99,11 @@ services:
       - cassandra_data3:/var/lib/cassandra
     restart: unless-stopped
     environment: *environment
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'DESCRIBE KEYSPACES' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
     depends_on:
       cassandra2:
         condition: service_started
@@ -92,6 +116,23 @@ services:
     entrypoint: ["sh", "-c", "until cqlsh cassandra1 -e 'DESCRIBE KEYSPACES'; do sleep 1; done; cqlsh cassandra1 -f /cql-scripts/init.cql"]
     volumes:
       - ./cql-scripts:/cql-scripts
+    networks:
+      - kai
+
+  # just dev mode for now
+  vault:
+    image: hashicorp/vault:latest
+    container_name: vault
+    ports:
+      - "8200:8200"
+    environment:
+      VAULT_ADDR: http://127.0.0.1:8200
+    volumes:
+      - vault_data:/vault/data
+      - ./vault/vault.hcl:/vault/vault.hcl
+    cap_add:
+      - IPC_LOCK
+    command: vault server -config=/vault/vault.hcl
     networks:
       - kai
 
@@ -115,6 +156,12 @@ volumes:
       o: bind
       type: none
       device: /home/kamisama/Desktop/cassandra/cassandra3
+  vault_data:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: /home/kamisama/Desktop/vault/vault_data
 
 networks:
   kai:
