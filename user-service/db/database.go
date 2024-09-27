@@ -54,6 +54,8 @@ func DatabaseSession() (*gocql.Session, error) {
 	cluster.Timeout = 3 * time.Second
 	cluster.ConnectTimeout = 3 * time.Second
 
+	cluster.Logger = gocql.Logger
+
 	session, err := cluster.CreateSession()
 	if err != nil {
 		return nil, err
@@ -64,6 +66,13 @@ func DatabaseSession() (*gocql.Session, error) {
 
 func ExecQuery(query string, queryParams ...interface{}) error {
 	if err := session.session.Query(query, queryParams...).Exec(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func ExecQueryWithResponse(r map[string]interface{}, query string, queryParams ...interface{}) error {
+	if err := session.session.Query(query, queryParams...).MapScan(r); err != nil {
 		return err
 	}
 	return nil

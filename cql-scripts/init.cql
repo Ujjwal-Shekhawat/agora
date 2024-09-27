@@ -6,5 +6,6 @@ CREATE TABLE IF NOT EXISTS users (
     user_id UUID,
     user_name TEXT,
     user_email TEXT,
+    user_password TEXT,
     PRIMARY KEY ((user_name), user_email)
 );

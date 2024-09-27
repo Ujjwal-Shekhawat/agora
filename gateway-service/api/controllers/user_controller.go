@@ -2,10 +2,14 @@ package controllers
 
 import (
 	"encoding/json"
+	"gateway_service/api/middleware"
 	"gateway_service/internal"
+	"io"
 	"log"
 	"net/http"
-	"user_service/models"
+	proto "proto/user"
+
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 type UserController struct {
@@ -17,7 +21,7 @@ func NewUserController(userClient *internal.UserServiceClientStruct) *UserContro
 }
 
 func (controller *UserController) getUserInfo(w http.ResponseWriter, r *http.Request) {
-	userId := r.PathValue("uid")
+	userId := r.PathValue("name")
 
 	// Make a grpc call to the user_service when the user_service is implemented
 	pres, err := controller.userServiceClient.GetUserDetails(userId)
@@ -31,27 +35,79 @@ func (controller *UserController) getUserInfo(w http.ResponseWriter, r *http.Req
 	json.NewEncoder(w).Encode(response)
 }
 
-func (Controller *UserController) createUser(w http.ResponseWriter, r *http.Request) {
-	var user models.User
-	err := json.NewDecoder(r.Body).Decode(&user)
+func (controller *UserController) createUser(w http.ResponseWriter, r *http.Request) {
+
+	user := &proto.User{}
+
+	requestBytes, err := io.ReadAll(r.Body)
 	if err != nil {
-		response := map[string]interface{}{"Message": "Something went wrong", "status": http.StatusInternalServerError}
+		log.Println("Error reading request bytes")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if err := protojson.Unmarshal(requestBytes, user); err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	pres, err := controller.userServiceClient.CreateNewUser(user)
+	if err != nil || pres.StatusCode != 0 {
+		response := map[string]interface{}{"Message": pres.Message, "status": http.StatusInternalServerError}
+		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(response)
 		return
 	}
 
-	pres, err := Controller.userServiceClient.CreateNewUser(&user)
+	token, err := middleware.GenTok(user.Name)
 	if err != nil {
-		response := map[string]interface{}{"Message": "Something went wrong", "status": http.StatusInternalServerError}
+		log.Println("Error generating token for user")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	response := map[string]interface{}{"Message": pres.Message, "token": token, "status": http.StatusOK}
+	json.NewEncoder(w).Encode(response)
+}
+
+func (controller *UserController) login(w http.ResponseWriter, r *http.Request) {
+	loginReq := &proto.LoginReq{}
+
+	requestBytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Println("Error reading request bytes")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if err := protojson.Unmarshal(requestBytes, loginReq); err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	pres, err := controller.userServiceClient.LoginUser(loginReq)
+	if err != nil || pres.StatusCode != 0 {
+		response := map[string]interface{}{"Message": pres.Message, "status": http.StatusInternalServerError}
+		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(response)
 		return
 	}
 
-	response := map[string]interface{}{"Message": pres.Message, "status": http.StatusOK}
+	token, err := middleware.GenTok(loginReq.Name)
+	if err != nil {
+		log.Println("Error generating token for user")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	response := map[string]interface{}{"Message": pres.Message, "token": token, "status": http.StatusOK}
 	json.NewEncoder(w).Encode(response)
 }
 
 func (u *UserController) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("GET /user/{uid}", u.getUserInfo)
-	mux.HandleFunc("POST /user", u.createUser)
+	mux.Handle("GET /user/{name}", middleware.Chain(http.HandlerFunc(u.getUserInfo), middleware.LoggingMiddleware, middleware.Auth))
+	mux.HandleFunc("POST /register/user", u.createUser)
+	mux.HandleFunc("POST /login", u.login)
 }

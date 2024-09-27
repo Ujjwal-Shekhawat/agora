@@ -5,21 +5,28 @@ package user_proto;
 option go_package = "./;proto";
 
 service UserService {
-    rpc GetUser(GetUserReq) returns (CreateUserResponse);
-    rpc CreateUser(User) returns (CreateUserResponse);
+    rpc Login(LoginReq) returns (ServerResponse);
+    rpc GetUser(GetUserReq) returns (ServerResponse);
+    rpc CreateUser(User) returns (ServerResponse);
 }
 
 message User {
     string uuid = 1;
     string name = 2;
     string email = 3;
+    string password = 4;
 }
 
 message GetUserReq {
-    string userID = 1;
+    string name = 1;
 }
 
-message CreateUserResponse {
+message ServerResponse {
     string message = 1;
     int32 status_code = 2;
+}
+
+message LoginReq {
+    string name = 1;
+    string password = 2;
 }
