@@ -8,8 +8,9 @@ import (
 	"user_service/config"
 	"user_service/db"
 
-	"github.com/gocql/gocql"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type server struct {
@@ -31,27 +32,10 @@ func (s *server) CreateUser(ctx context.Context, in *proto.User) (*proto.ServerR
 
 	name, email, password := in.Name, in.Email, in.Password
 
-	var check_query string = "SELECT user_name, user_email from users where user_name = ?"
-	user := map[string]interface{}{}
-	if err := db.ExecQueryWithResponse(user, check_query, name); err != gocql.ErrNotFound && err != nil {
-		response_proto.Message = "Error creating user"
-		response_proto.StatusCode = 13
-		log.Println("Exec error", err.Error())
-		return response_proto, err
-	}
-
-	if len(user) > 0 {
-		response_proto.Message = "UserName already exsists"
-		response_proto.StatusCode = 13
-		return response_proto, nil
-	}
-
-	var query string = "INSERT INTO users (user_id, user_name, user_email, user_password) VALUES (uuid(), ?, ?, ?);"
-	if err := db.ExecQuery(query, name, email, password); err != nil {
-		response_proto.Message = "Error creating user"
-		response_proto.StatusCode = 13
-		log.Fatal("Exec error", err.Error())
-		return response_proto, err
+	err := db.MongoCreateUser(name, email, password)
+	if err != nil {
+		log.Println("User already exsists", err)
+		return nil, status.Errorf(codes.AlreadyExists, "User already exsists")
 	}
 
 	response_proto.Message = "User created successfully"

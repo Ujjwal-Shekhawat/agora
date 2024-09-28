@@ -9,6 +9,7 @@ import (
 	"net/http"
 	proto "proto/user"
 
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
@@ -53,8 +54,9 @@ func (controller *UserController) createUser(w http.ResponseWriter, r *http.Requ
 	}
 
 	pres, err := controller.userServiceClient.CreateNewUser(user)
-	if err != nil || pres.StatusCode != 0 {
-		response := map[string]interface{}{"Message": pres.Message, "status": http.StatusInternalServerError}
+	if err != nil {
+		log.Println(err)
+		response := map[string]interface{}{"Message": status.Convert(err).Message(), "status": http.StatusInternalServerError}
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(response)
 		return
