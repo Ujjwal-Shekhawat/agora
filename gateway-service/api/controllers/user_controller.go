@@ -14,10 +14,10 @@ import (
 )
 
 type UserController struct {
-	userServiceClient *internal.UserServiceClientStruct
+	userServiceClient *internal.ServiceClientStruct
 }
 
-func NewUserController(userClient *internal.UserServiceClientStruct) *UserController {
+func NewUserController(userClient *internal.ServiceClientStruct) *UserController {
 	return &UserController{userServiceClient: userClient}
 }
 

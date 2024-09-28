@@ -6,10 +6,10 @@ import (
 )
 
 type SocketController struct {
-	userServiceClient *internal.UserServiceClientStruct
+	userServiceClient *internal.ServiceClientStruct
 }
 
-func NewSocketController(userClient *internal.UserServiceClientStruct) *SocketController {
+func NewSocketController(userClient *internal.ServiceClientStruct) *SocketController {
 	return &SocketController{userServiceClient: userClient}
 }
 

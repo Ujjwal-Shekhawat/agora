@@ -13,17 +13,18 @@ import (
 func main() {
 	cfg := config.LoadConfig()
 
-	userServiceClient, err := internal.GetUserServiceClient(cfg.UserServiceAddr)
+	serviceClient, err := internal.GetServiceClient(cfg.UserServiceAddr)
 	if err != nil {
 		log.Fatal("Failed to create user service client: ", err)
 	}
 
-	userController := controllers.NewUserController(userServiceClient)
-	sockerController := sockets.NewSocketController(userServiceClient)
+	userController := controllers.NewUserController(serviceClient)
+	sockerController := sockets.NewSocketController(serviceClient)
+	guildController := controllers.NewGuildController(serviceClient)
 
 	router := http.NewServeMux()
 
-	routes.RegisterControllers(router, userController, sockerController)
+	routes.RegisterControllers(router, userController, sockerController, guildController)
 
 	log.Print("Server started on address: ", cfg.ServerPort)
 

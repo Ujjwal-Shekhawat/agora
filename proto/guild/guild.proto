@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package guild_proto;
+
+option go_package = "./;proto";
+
+service GuildService {
+    rpc CreateGuild(Guild) returns (ServerResponse);
+    rpc GetGuild(Guild) returns (GuildResponse);
+    rpc JoinGuild(GuildMember) returns (ServerResponse);
+    rpc LeaveGuild(GuildMember) returns (ServerResponse);
+}
+
+message Guild {
+    string name = 1;
+}
+
+message GuildResponse {
+    string name = 1;
+    repeated string channels = 2;
+}
+
+message ServerResponse {
+    string message = 1;
+    int32 status_code = 2;
+}
+
+message GuildMember {
+    string name = 1;
+}
