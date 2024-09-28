@@ -27,12 +27,16 @@ func (controller *UserController) getUserInfo(w http.ResponseWriter, r *http.Req
 	// Make a grpc call to the user_service when the user_service is implemented
 	pres, err := controller.userServiceClient.GetUserDetails(userId)
 	if err != nil {
-		log.Fatal("Failed to get user from user_service", err)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		response := map[string]interface{}{"message": status.Convert(err).Message(), "status": 404}
+		json.NewEncoder(w).Encode(response)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	response := map[string]interface{}{"message": pres.Message, "status": pres.StatusCode}
+	response := map[string]interface{}{"message": pres.Message, "status": http.StatusOK}
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -90,8 +94,8 @@ func (controller *UserController) login(w http.ResponseWriter, r *http.Request) 
 	}
 
 	pres, err := controller.userServiceClient.LoginUser(loginReq)
-	if err != nil || pres.StatusCode != 0 {
-		response := map[string]interface{}{"Message": pres.Message, "status": http.StatusInternalServerError}
+	if err != nil {
+		response := map[string]interface{}{"Message": status.Convert(err).Message(), "status": http.StatusInternalServerError}
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(response)
 		return

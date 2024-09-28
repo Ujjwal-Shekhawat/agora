@@ -65,7 +65,7 @@ func InitMongoSess() error {
 }
 
 func MongoCreateUser(name, email, password string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	user := bson.D{
@@ -80,4 +80,50 @@ func MongoCreateUser(name, email, password string) error {
 	}
 
 	return nil
+}
+
+func MongoGetUser(name string) map[string]interface{} {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	res := mongodb.client.Database("main_dab").Collection("users").FindOne(ctx, bson.D{{Key: "username", Value: name}})
+
+	var dRes map[string]interface{}
+	res.Decode(&dRes)
+
+	return dRes
+}
+
+func MongoCreateGuild(name string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	guild := &bson.D{
+		{Key: "name", Value: name},
+		{Key: "channels", Value: bson.A{"general"}},
+	}
+
+	_, err := mongodb.client.Database("main_dab").Collection("guilds").InsertOne(ctx, guild)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	return nil
+}
+
+func MongoGetGuild(name string) (map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	res := mongodb.client.Database("main_dab").Collection("guilds").FindOne(ctx, bson.D{{Key: "name", Value: name}})
+
+	var rDec map[string]interface{}
+
+	if err := res.Decode(rDec); err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	return rDec, nil
 }

@@ -18,8 +18,16 @@ type server struct {
 }
 
 func (s *server) GetUser(ctx context.Context, in *proto.GetUserReq) (*proto.ServerResponse, error) {
+
+	log.Println("Finding user", in.Name)
+	res := db.MongoGetUser(in.Name)
+
+	if len(res) == 0 {
+		return nil, status.Errorf(codes.NotFound, "User not found with name %s", in.Name)
+	}
+
 	return &proto.ServerResponse{
-		Message:    "User id: " + in.Name,
+		Message:    "User id: " + res["username"].(string) + " User email: " + res["email"].(string),
 		StatusCode: 0,
 	}, nil
 }
@@ -50,8 +58,19 @@ func (s *server) Login(ctx context.Context, loginReq *proto.LoginReq) (*proto.Se
 		StatusCode: 0,
 	}
 
-	response_proto.Message = "Login not yet implemented"
-	response_proto.StatusCode = 13
+	res := db.MongoGetUser(loginReq.Name)
+
+	if len(res) == 0 {
+		return nil, status.Error(codes.NotFound, "invalid credentials")
+	} else {
+		password := res["password"].(string)
+		if password != loginReq.Password {
+			return nil, status.Error(codes.PermissionDenied, "invalid credentials")
+		}
+	}
+
+	response_proto.Message = "successfuly logged in"
+	response_proto.StatusCode = 0
 
 	return response_proto, nil
 }
