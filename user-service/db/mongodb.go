@@ -94,13 +94,14 @@ func MongoGetUser(name string) map[string]interface{} {
 	return dRes
 }
 
-func MongoCreateGuild(name string) error {
+func MongoCreateGuild(name, creator string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	guild := &bson.D{
 		{Key: "name", Value: name},
 		{Key: "channels", Value: bson.A{"general"}},
+		{Key: "users", Value: bson.A{creator}},
 	}
 
 	_, err := mongodb.client.Database("main_dab").Collection("guilds").InsertOne(ctx, guild)
@@ -125,4 +126,21 @@ func MongoGetGuild(name string) (map[string]interface{}, error) {
 	}
 
 	return rDec, nil
+}
+
+func MongoJoinGuild(user, guild string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	update := bson.D{
+		{Key: "$addToSet", Value: bson.D{{Key: "users", Value: user}}},
+	}
+
+	res := mongodb.client.Database("main_dab").Collection("guilds").FindOneAndUpdate(ctx, bson.D{{Key: "name", Value: guild}}, update)
+	if res.Err() != nil {
+		log.Println(res.Err())
+		return res.Err()
+	}
+
+	return nil
 }

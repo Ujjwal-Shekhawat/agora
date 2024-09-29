@@ -13,11 +13,13 @@ service GuildService {
 
 message Guild {
     string name = 1;
+    string creator = 2;
 }
 
 message GuildResponse {
     string name = 1;
     repeated string channels = 2;
+    repeated string members = 3;
 }
 
 message ServerResponse {
@@ -27,4 +29,5 @@ message ServerResponse {
 
 message GuildMember {
     string name = 1;
+    string guild_name = 2;
 }

@@ -21,9 +21,9 @@ func (s *guild_server) CreateGuild(ctx context.Context, guild *proto.Guild) (*pr
 		StatusCode: 0,
 	}
 
-	guildName := guild.Name
+	guildName, creator := guild.Name, guild.Creator
 
-	if err := db.MongoCreateGuild(guildName); err != nil {
+	if err := db.MongoCreateGuild(guildName, creator); err != nil {
 		log.Println(err)
 		return nil, status.Error(codes.InvalidArgument, "Guild with that name already exsists")
 	}
@@ -70,14 +70,49 @@ func (s *guild_server) GetGuild(ctx context.Context, guild *proto.Guild) (*proto
 		return nil, status.Error(codes.Internal, "Something went wrong terribly")
 	}
 
+	users := []string{}
+	kk, ok := res["users"].(primitive.A)
+	if ok {
+		for _, channel := range kk {
+			name, ok := channel.(string)
+			if ok {
+				users = append(users, name)
+			} else {
+				log.Println(err)
+				return nil, status.Error(codes.Internal, "Something went wrong terribly")
+			}
+		}
+	} else {
+		log.Println(err)
+		return nil, status.Error(codes.Internal, "Something went wrong terribly")
+	}
+
 	response_proto.Name = res["name"].(string)
+	response_proto.Members = users
 	response_proto.Channels = channels
 
 	return response_proto, nil
 }
 
 func (s *guild_server) JoinGuild(ctx context.Context, guild *proto.GuildMember) (*proto.ServerResponse, error) {
-	return nil, nil
+	response_proto := &proto.ServerResponse{
+		Message:    "",
+		StatusCode: 0,
+	}
+
+	memberName, guildName := guild.Name, guild.GuildName
+
+	log.Println(memberName, guildName)
+
+	if err := db.MongoJoinGuild(memberName, guildName); err != nil {
+		log.Println(err)
+		return nil, status.Error(codes.Internal, "Something went wrong while adding user guild")
+	}
+
+	response_proto.Message = "Joined guild successfully"
+	response_proto.StatusCode = 0
+
+	return response_proto, nil
 }
 
 func (s *guild_server) LeaveGuild(ctx context.Context, guild *proto.GuildMember) (*proto.ServerResponse, error) {

@@ -72,6 +72,14 @@ db.createCollection("guilds", {
                         description: "must be an array of strings representing channel names"
                     },
                     description: "must be an array"
+                },
+                members: {
+                    bsonType: "array",
+                    items: {
+                        bsonType: "string",
+                        description: "must be an array of strings representing user names"
+                    },
+                    description: "must be an array"
                 }
             }
         }
