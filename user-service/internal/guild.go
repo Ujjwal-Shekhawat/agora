@@ -6,6 +6,7 @@ import (
 	proto "proto/guild"
 	"user_service/db"
 
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -44,16 +45,33 @@ func (s *guild_server) GetGuild(ctx context.Context, guild *proto.Guild) (*proto
 	res, err := db.MongoGetGuild(guildName)
 	if err != nil {
 		log.Println(err)
-		return nil, status.Error(codes.Internal, "Something went wrong terribly")
+		return nil, status.Error(codes.Internal, "Guild with that name does not exists")
 	}
 
 	if len(res) == 0 {
 		log.Print("Guild not found here")
-		return nil, status.Error(codes.NotFound, "Guild with that name doesnot exists")
+		return nil, status.Error(codes.NotFound, "Guild with that name does not exists")
+	}
+
+	channels := []string{}
+	k, ok := res["channels"].(primitive.A)
+	if ok {
+		for _, channel := range k {
+			name, ok := channel.(string)
+			if ok {
+				channels = append(channels, name)
+			} else {
+				log.Println(err)
+				return nil, status.Error(codes.Internal, "Something went wrong terribly")
+			}
+		}
+	} else {
+		log.Println(err)
+		return nil, status.Error(codes.Internal, "Something went wrong terribly")
 	}
 
 	response_proto.Name = res["name"].(string)
-	response_proto.Channels = res["channels"].([]string)
+	response_proto.Channels = channels
 
 	return response_proto, nil
 }

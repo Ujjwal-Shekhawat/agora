@@ -120,8 +120,7 @@ func MongoGetGuild(name string) (map[string]interface{}, error) {
 
 	var rDec map[string]interface{}
 
-	if err := res.Decode(rDec); err != nil {
-		log.Println(err)
+	if err := res.Decode(&rDec); err != nil {
 		return nil, err
 	}
 

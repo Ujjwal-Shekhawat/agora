@@ -21,6 +21,29 @@ func NewGuildController(serviceClient *internal.ServiceClientStruct) *GuildContr
 	return &GuildController{serviceClient: serviceClient}
 }
 
+func (g *GuildController) getGuild(w http.ResponseWriter, r *http.Request) {
+	guildName := r.PathValue("guildName")
+
+	guild := &proto.Guild{
+		Name: guildName,
+	}
+
+	pres, err := g.serviceClient.FetchGuild(guild)
+	if err != nil {
+		log.Println(err)
+		response := map[string]interface{}{"Message": status.Convert(err).Message(), "status": http.StatusInternalServerError}
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	name, channels := pres.Name, pres.Channels
+
+	response := map[string]interface{}{"guild name": name, "guild channels": channels, "status": http.StatusOK}
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}
+
 func (g *GuildController) createGuild(w http.ResponseWriter, r *http.Request) {
 
 	guild := &proto.Guild{}
@@ -55,5 +78,6 @@ func (g *GuildController) createGuild(w http.ResponseWriter, r *http.Request) {
 }
 
 func (g *GuildController) RegisterRoutes(mux *http.ServeMux) {
+	mux.Handle("GET /guild/{guildName}", middleware.Chain(http.HandlerFunc(g.getGuild), middleware.LoggingMiddleware, middleware.Auth))
 	mux.Handle("POST /guild", middleware.Chain(http.HandlerFunc(g.createGuild), middleware.LoggingMiddleware, middleware.Auth))
 }
