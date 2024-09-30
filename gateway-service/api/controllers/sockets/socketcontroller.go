@@ -1,6 +1,7 @@
 package sockets
 
 import (
+	"gateway_service/api/middleware"
 	"gateway_service/internal"
 	"net/http"
 )
@@ -14,6 +15,6 @@ func NewSocketController(userClient *internal.ServiceClientStruct) *SocketContro
 }
 
 func (s *SocketController) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/ws/{roomName}", s.socketHandler)
+	mux.Handle("/ws/{roomName}", middleware.Chain(http.HandlerFunc(s.socketHandler), middleware.LoggingMiddleware, middleware.Auth))
 	mux.HandleFunc("GET /wss", s.debugHandler)
 }
