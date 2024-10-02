@@ -1,10 +1,15 @@
 package middleware
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"strings"
 )
+
+type contextKey string
+
+const AuthUserString = contextKey("AuthUserString")
 
 func Auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -14,9 +19,20 @@ func Auth(next http.Handler) http.Handler {
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(http.StatusForbidden)
-			_ = token
 			return
 		}
+
+		subject, err := token.Claims.GetSubject()
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), AuthUserString, subject)
+
+		r = r.WithContext(ctx)
+
 		next.ServeHTTP(w, r)
 	})
 }

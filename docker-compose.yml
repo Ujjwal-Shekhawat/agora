@@ -32,16 +32,40 @@ services:
       - kai
     environment:
       SERVICE_PORT: :5051
+      MONGO_DB_URI: mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@mongo
       CASSANDRA_CLUSTER: cassandra1,cassandra2,cassandra3
     restart: unless-stopped
     depends_on:
       gateway-service:    
         condition: service_started
+      mongo:
+        condition: service_healthy
       cassandra3:
         condition: service_healthy  
       vault:
         condition: service_started
-          
+
+  mongo:
+    image: mongo:latest
+    container_name: mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    healthcheck:
+      test: ["CMD", "bash", "-c", "mongosh --username $MONGO_INITDB_ROOT_USERNAME --password $MONGO_INITDB_ROOT_PASSWORD --authenticationDatabase admin --eval 'db.runCommand({ ping: 1 })'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 3s
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+    volumes:
+      - mongodb-data:/data/db
+      - ./mongodb-scripts/init.js:/docker-entrypoint-initdb.d/init.js
+    networks:
+      - kai
+
   cassandra1: 
     image: cassandra:latest 
     container_name: cassandra1  
@@ -138,6 +162,12 @@ services:
 
 # Change the volumes to you local path
 volumes:
+  mongodb-data:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: /home/kamisama/Desktop/mongodb
   cassandra_data1:
     driver: local
     driver_opts:

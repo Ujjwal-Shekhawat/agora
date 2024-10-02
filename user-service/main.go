@@ -14,6 +14,8 @@ func main() {
 		log.Fatal(err)
 	}
 
+	db.InitMongoSess()
+
 	log.Println("Service started on port: ", cfg.ServerPort)
 	if err := internal.StartGrpcServer(cfg); err != nil {
 		log.Fatal("Unable to start the grpc server")

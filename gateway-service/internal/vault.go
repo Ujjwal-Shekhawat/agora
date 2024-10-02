@@ -26,9 +26,5 @@ func GetCredentials() map[string]interface{} {
 		log.Fatalf("Failed to read secret: %v", err)
 	}
 
-	log.Println("--------------------")
-	log.Println(secret.Data)
-	log.Println("--------------------")
-
 	return secret.Data
 }
