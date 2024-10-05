@@ -7,9 +7,14 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+type Message struct {
+	Message []byte
+	Sender  *Client
+}
+
 type Room struct {
 	clients    map[*Client]bool
-	broadcast  chan []byte
+	broadcast  chan *Message
 	register   chan *Client
 	unregister chan *Client
 }
@@ -25,7 +30,7 @@ var upgrader = websocket.Upgrader{
 func createRoom() *Room {
 	return &Room{
 		clients:    make(map[*Client]bool),
-		broadcast:  make(chan []byte),
+		broadcast:  make(chan *Message),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 	}
@@ -43,22 +48,26 @@ func (r *Room) run() {
 				close(client.send)
 			}
 		case message := <-r.broadcast:
-			internal.PublishMessage("topic-1", []byte("key-1"), message)
+			internal.PublishMessage("topic-1", []byte(message.Sender.id), message.Message)
 			for client := range r.clients {
-				select {
-				case client.send <- message:
-				default:
-					delete(r.clients, client)
-					close(client.send)
+				if client != message.Sender {
+					select {
+					case client.send <- message.Message:
+					default:
+						delete(r.clients, client)
+						close(client.send)
+					}
 				}
 			}
 		case message := <-kafkaconsumer:
 			for client := range r.clients {
-				select {
-				case client.send <- []byte(message.Message):
-				default:
-					delete(r.clients, client)
-					close(client.send)
+				if client.id != message.Key {
+					select {
+					case client.send <- []byte(message.Message):
+					default:
+						delete(r.clients, client)
+						close(client.send)
+					}
 				}
 			}
 		}

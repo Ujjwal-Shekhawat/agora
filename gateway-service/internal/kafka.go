@@ -9,6 +9,7 @@ import (
 )
 
 type KafkaConsumerEvent struct {
+	Key     string
 	Message string
 	err     error
 }
@@ -101,7 +102,7 @@ func ConsumerTopic(topic string) (messages chan KafkaConsumerEvent) {
 			switch e := events.(type) {
 			case *kafka.Message:
 				fmt.Printf("Message received: %s\n", string(e.Value))
-				messages <- KafkaConsumerEvent{Message: string(e.Value), err: nil}
+				messages <- KafkaConsumerEvent{Key: string(e.Key), Message: string(e.Value), err: nil}
 			case kafka.Error:
 				fmt.Printf("Error occurred: %v\n", e)
 				messages <- KafkaConsumerEvent{Message: "", err: e}
