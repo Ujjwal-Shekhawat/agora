@@ -9,6 +9,7 @@ type Config struct {
 	VaultToken      string
 	KVStore         string
 	KVPath          string
+	KafkaBrokers    string
 }
 
 func LoadConfig() *Config {
@@ -19,6 +20,7 @@ func LoadConfig() *Config {
 		VaultToken:      getEnvOrDefault("VAULT_TOKEN", ""),
 		KVStore:         getEnvOrDefault("KVSTORE_NAME", "signing_key"),
 		KVPath:          getEnvOrDefault("KVPATH_NAME", "keys"),
+		KafkaBrokers:    getEnvOrDefault("KAFKA_BROKERS", ""),
 	}
 }
 

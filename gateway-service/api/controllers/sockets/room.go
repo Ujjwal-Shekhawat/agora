@@ -1,6 +1,7 @@
 package sockets
 
 import (
+	"gateway_service/internal"
 	"net/http"
 
 	"github.com/gorilla/websocket"
@@ -31,6 +32,7 @@ func createRoom() *Room {
 }
 
 func (r *Room) run() {
+	kafkaconsumer := internal.ConsumerTopic("topic-1")
 	for {
 		select {
 		case client := <-r.register:
@@ -41,9 +43,19 @@ func (r *Room) run() {
 				close(client.send)
 			}
 		case message := <-r.broadcast:
+			internal.PublishMessage("topic-1", []byte("key-1"), message)
 			for client := range r.clients {
 				select {
 				case client.send <- message:
+				default:
+					delete(r.clients, client)
+					close(client.send)
+				}
+			}
+		case message := <-kafkaconsumer:
+			for client := range r.clients {
+				select {
+				case client.send <- []byte(message.Message):
 				default:
 					delete(r.clients, client)
 					close(client.send)

@@ -13,6 +13,30 @@ services:
       KVSTORE_NAME: signing_key
       KVPATH_NAME: keys
       VAULT_TOKEN: ${VAULT_TOKEN}
+      KAFKA_BROKERS: kafka
+    networks:
+      - kai
+    depends_on:
+      cassandra3:
+        condition: service_healthy
+      vault:
+        condition: service_started
+
+  gateway-service1:
+    build:
+      context: ./
+      dockerfile: Dockerfile.gateway_service     
+    container_name: gateway_service1
+    ports:
+      - "8082:8080"               
+    environment:
+      SERVICE_PORT: :8080
+      USER_SERVICE_ADDRESS: user_service:5051
+      VAULT_HOST: vault:8200
+      KVSTORE_NAME: signing_key
+      KVPATH_NAME: keys
+      VAULT_TOKEN: ${VAULT_TOKEN}
+      KAFKA_BROKERS: kafka
     networks:
       - kai
     depends_on:
@@ -143,6 +167,43 @@ services:
     networks:
       - kai
 
+  kafka:
+    image: apache/kafka:latest
+    container_name: kafka
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://kafka:9092,CONTROLLER://kafka:9093  # Use service name
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092  # Use service name
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093  # Use service name
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_LOG_RETENTION_MS: 60000
+      KAFKA_LOG_SEGMENT_MS: 600000
+      KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS: 60000
+      KAFKA_LOG_DIRS: "/var/lib/kafka/data"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    networks:
+      - kai
+
+  kowl:
+    image: quay.io/cloudhut/kowl:master
+    environment:
+      KAFKA_BROKERS: kafka:9092  # Use service name
+    ports:
+      - "8081:8080"  # Kowl UI exposed on port 8080
+    networks:
+      - kai
+
   # just dev mode for now
   vault:
     image: hashicorp/vault:latest
@@ -186,6 +247,12 @@ volumes:
       o: bind
       type: none
       device: /home/kamisama/Desktop/cassandra/cassandra3
+  kafka_data:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: /home/kamisama/Desktop/kafka/data
   vault_data:
     driver: local
     driver_opts:
