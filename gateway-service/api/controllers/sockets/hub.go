@@ -24,7 +24,7 @@ func serveSocket(user string, roomName string, w http.ResponseWriter, r *http.Re
 
 	room, ok := hub.rooms[roomName]
 	if !ok {
-		room = createRoom()
+		room = createRoom(roomName)
 		hub.rooms[roomName] = room
 		go room.run()
 	}
@@ -93,6 +93,8 @@ func (s *SocketController) socketHandler(w http.ResponseWriter, r *http.Request)
 		http.Error(w, "Channel name dne", http.StatusInternalServerError)
 		return
 	}
+
+	roomName = roomName + "-" + channelName
 
 	serveSocket(user, roomName, w, r)
 }
