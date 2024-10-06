@@ -15,7 +15,7 @@ var hub = Hub{
 	rooms: make(map[string]*Room),
 }
 
-func serveSocket(roomName string, w http.ResponseWriter, r *http.Request) {
+func serveSocket(user string, roomName string, w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -24,12 +24,12 @@ func serveSocket(roomName string, w http.ResponseWriter, r *http.Request) {
 
 	room, ok := hub.rooms[roomName]
 	if !ok {
-		room = createRoom()
+		room = createRoom(roomName)
 		hub.rooms[roomName] = room
 		go room.run()
 	}
 
-	client := &Client{room: room, conn: conn, send: make(chan []byte)}
+	client := &Client{id: user, room: room, conn: conn, send: make(chan []byte)}
 
 	room.register <- client
 
@@ -50,7 +50,12 @@ func (s *SocketController) socketHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	user := r.Context().Value(middleware.AuthUserString)
+	user, ok := r.Context().Value(middleware.AuthUserString).(string)
+	if !ok {
+		log.Println("Something wrong with the user token")
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		return
+	}
 
 	guild := &proto.Guild{
 		Name: roomName,
@@ -89,7 +94,9 @@ func (s *SocketController) socketHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	serveSocket(roomName, w, r)
+	roomName = roomName + "-" + channelName
+
+	serveSocket(user, roomName, w, r)
 }
 
 // remove this later

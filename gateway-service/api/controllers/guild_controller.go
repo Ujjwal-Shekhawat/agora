@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	proto "proto/guild"
+	"regexp"
 
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -82,6 +83,13 @@ func (g *GuildController) createGuild(w http.ResponseWriter, r *http.Request) {
 	if err := protojson.Unmarshal(responseBytes, guild); err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if !regexp.MustCompile(`^[A-Za-z0-9]*$`).MatchString(guild.Name) {
+		response := map[string]interface{}{"Message": "Guild name should be alnum nonly", "status": http.StatusInternalServerError}
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(response)
 		return
 	}
 

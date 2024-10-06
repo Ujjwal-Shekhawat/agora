@@ -7,6 +7,7 @@ import (
 )
 
 type Client struct {
+	id   string
 	room *Room
 	conn *websocket.Conn
 	send chan []byte
@@ -23,7 +24,11 @@ func (c *Client) readPump() {
 			log.Println("Read error:", err)
 			break
 		}
-		c.room.broadcast <- message
+		msg := &Message{
+			Message: message,
+			Sender:  c,
+		}
+		c.room.broadcast <- msg
 	}
 }
 
