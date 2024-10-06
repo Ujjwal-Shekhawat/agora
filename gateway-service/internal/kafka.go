@@ -57,6 +57,22 @@ func InitKafka(consumer string) error {
 	return nil
 }
 
+func KafkaConsumer(groupId string) (*kafka.Consumer, error) {
+	consumerconfig := &kafka.ConfigMap{
+		"bootstrap.servers": cfg.KafkaBrokers,
+		"group.id":          groupId,
+		"auto.offset.reset": "earliest",
+	}
+
+	kconsumer, err := kafka.NewConsumer(consumerconfig)
+	if err != nil {
+		log.Fatal(err)
+		return nil, err
+	}
+
+	return kconsumer, nil
+}
+
 func PublishMessage(topic string, key, value []byte) error {
 	kDChan := make(chan kafka.Event, 1)
 
@@ -88,24 +104,31 @@ func PublishMessage(topic string, key, value []byte) error {
 	return nil
 }
 
-func ConsumerTopic(topic string) (messages chan KafkaConsumerEvent) {
+func ConsumerTopic(consumer *kafka.Consumer, topic string, exit chan struct{}) (messages chan KafkaConsumerEvent) {
 	log.Println("Consumer topic was created")
 	messages = make(chan KafkaConsumerEvent)
-	err := kafkahandler.consumer.SubscribeTopics([]string{topic}, nil)
+	err := consumer.SubscribeTopics([]string{topic}, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	go func() {
+		defer close(messages)
 		for {
-			events := kafkahandler.consumer.Poll(100)
-			switch e := events.(type) {
-			case *kafka.Message:
-				fmt.Printf("Message received: %s\n", string(e.Value))
-				messages <- KafkaConsumerEvent{Key: string(e.Key), Message: string(e.Value), err: nil}
-			case kafka.Error:
-				fmt.Printf("Error occurred: %v\n", e)
-				messages <- KafkaConsumerEvent{Message: "", err: e}
+			select {
+			case <-exit:
+				log.Println("Exiting goroutine")
+				return
+			default:
+				events := consumer.Poll(100)
+				switch e := events.(type) {
+				case *kafka.Message:
+					fmt.Printf("Message received: %s\n", string(e.Value))
+					messages <- KafkaConsumerEvent{Key: string(e.Key), Message: string(e.Value), err: nil}
+				case kafka.Error:
+					fmt.Printf("Error occurred: %v\n", e)
+					messages <- KafkaConsumerEvent{Message: "", err: e}
+				}
 			}
 		}
 	}()

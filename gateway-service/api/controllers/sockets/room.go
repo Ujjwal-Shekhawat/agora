@@ -2,6 +2,7 @@ package sockets
 
 import (
 	"gateway_service/internal"
+	"log"
 	"net/http"
 	"strings"
 
@@ -42,7 +43,15 @@ func createRoom(name string) *Room {
 func (r *Room) run() {
 	channelName := strings.Join(strings.Split(r.name, "-")[1:], "-")
 	guildName := strings.Join(strings.Split(r.name, "-")[:1], "-")
-	kafkaconsumer := internal.ConsumerTopic(guildName)
+	kafkaConsumerRef, err := internal.KafkaConsumer(guildName)
+	if err != nil {
+		log.Println("Something waent wron while creating the room")
+		return
+	}
+	exitSignal := make(chan struct{})
+	kafkaconsumer := internal.ConsumerTopic(kafkaConsumerRef, guildName, exitSignal)
+	defer kafkaConsumerRef.Close()
+	defer close(exitSignal)
 	for {
 		select {
 		case client := <-r.register:
