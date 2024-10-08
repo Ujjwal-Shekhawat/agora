@@ -69,6 +69,23 @@ services:
       vault:
         condition: service_started
 
+  messaging_service:
+    build:
+      context: ./    
+      dockerfile: Dockerfile.messaging_service     
+    container_name: messaging_service
+    networks:
+      - kai
+    environment:
+      CASSANDRA_CLUSTER: cassandra1,cassandra2,cassandra3
+      KAFKA_BROKERS: kafka
+    restart: unless-stopped
+    depends_on:
+      cassandra3:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+
   mongo:
     image: mongo:latest
     container_name: mongodb

@@ -5,6 +5,7 @@ WORKDIR /app
 COPY ./go.work ./go.work.sum ./
 COPY ./gateway-service ./gateway-service/
 COPY ./user-service ./user-service/
+COPY ./messaging_service ./messaging_service/
 COPY ./proto/ ./proto
 
 RUN go mod download

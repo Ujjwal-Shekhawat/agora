@@ -61,7 +61,7 @@ func KafkaConsumer(groupId string) (*kafka.Consumer, error) {
 	consumerconfig := &kafka.ConfigMap{
 		"bootstrap.servers": cfg.KafkaBrokers,
 		"group.id":          groupId,
-		"auto.offset.reset": "earliest",
+		"auto.offset.reset": "latest",
 	}
 
 	kconsumer, err := kafka.NewConsumer(consumerconfig)

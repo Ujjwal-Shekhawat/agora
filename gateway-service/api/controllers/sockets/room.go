@@ -62,7 +62,7 @@ func (r *Room) run() {
 				close(client.send)
 			}
 		case message := <-r.broadcast:
-			internal.PublishMessage(guildName, []byte(message.Sender.id+"-"+channelName), message.Message)
+			internal.PublishMessage("guild-"+guildName, []byte(message.Sender.id+"-"+channelName), message.Message)
 			for client := range r.clients {
 				if client != message.Sender {
 					select {
