@@ -38,7 +38,7 @@ func InitSession() error {
 func DatabaseSession() (*gocql.Session, error) {
 	cfg := config.LoadConfig()
 	cluster := gocql.NewCluster(strings.Split(cfg.CassandraCluster, ",")...) // Fetch from config later
-	cluster.Keyspace = "users"                                               // this can be friends as well
+	cluster.Keyspace = "guild_messages"                                      // this can be friends as well
 	cluster.Consistency = gocql.Quorum
 	cluster.ProtoVersion = 4
 

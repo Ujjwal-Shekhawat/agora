@@ -1,11 +1,12 @@
-CREATE KEYSPACE IF NOT EXISTS users WITH REPLICATION = { 'class' : 'SimpleStrategy', 'replication_factor' : 3 };
+CREATE KEYSPACE IF NOT EXISTS guild_messages WITH REPLICATION = { 'class' : 'SimpleStrategy', 'replication_factor' : 3 };
 
-USE users;
+USE guild_messages;
 
-CREATE TABLE IF NOT EXISTS users (
-    user_id UUID,
+CREATE TABLE IF NOT EXISTS messages (
+    guild_name TEXT,
     user_name TEXT,
-    user_email TEXT,
-    user_password TEXT,
-    PRIMARY KEY ((user_name), user_email)
+    channel_name TEXT,
+    user_message TEXT,
+    timestamp TIMESTAMP,
+    PRIMARY KEY ((guild_name, channel_name), user_name)
 );

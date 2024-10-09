@@ -1,10 +1,12 @@
 package sockets
 
 import (
+	"fmt"
 	"gateway_service/internal"
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -43,13 +45,14 @@ func createRoom(name string) *Room {
 func (r *Room) run() {
 	channelName := strings.Join(strings.Split(r.name, "-")[1:], "-")
 	guildName := strings.Join(strings.Split(r.name, "-")[:1], "-")
-	kafkaConsumerRef, err := internal.KafkaConsumer(guildName)
+	gID := time.Now().UnixMilli()
+	kafkaConsumerRef, err := internal.KafkaConsumer(fmt.Sprint(gID))
 	if err != nil {
 		log.Println("Something waent wron while creating the room")
 		return
 	}
 	exitSignal := make(chan struct{})
-	kafkaconsumer := internal.ConsumerTopic(kafkaConsumerRef, guildName, exitSignal)
+	kafkaconsumer := internal.ConsumerTopic(kafkaConsumerRef, "guild-"+guildName, exitSignal)
 	defer kafkaConsumerRef.Close()
 	defer close(exitSignal)
 	for {
@@ -63,21 +66,12 @@ func (r *Room) run() {
 			}
 		case message := <-r.broadcast:
 			internal.PublishMessage("guild-"+guildName, []byte(message.Sender.id+"-"+channelName), message.Message)
-			for client := range r.clients {
-				if client != message.Sender {
-					select {
-					case client.send <- message.Message:
-					default:
-						delete(r.clients, client)
-						close(client.send)
-					}
-				}
-			}
 		case message := <-kafkaconsumer:
 			for client := range r.clients {
 				if client.id+"-"+channelName != message.Key {
+					userName := strings.Split(message.Key, "-")[0]
 					select {
-					case client.send <- []byte(message.Message):
+					case client.send <- []byte(userName + ": " + message.Message):
 					default:
 						delete(r.clients, client)
 						close(client.send)

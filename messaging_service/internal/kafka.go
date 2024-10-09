@@ -3,6 +3,8 @@ package internal
 import (
 	"log"
 	"message_persistance/config"
+	"message_persistance/db"
+	"strings"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
@@ -24,7 +26,6 @@ func InitKafka() error {
 		"group.id":                           groupId,
 		"auto.offset.reset":                  "earliest",
 		"topic.metadata.refresh.interval.ms": 60000,
-		"debug":                              "consumer,topic,metadata",
 	}
 
 	consumer, err := kafka.NewConsumer(kafkaConsumerConfig)
@@ -53,6 +54,15 @@ func Start() {
 		switch e := event.(type) {
 		case *kafka.Message:
 			log.Println("Persisting", string(e.Key), string(e.Value))
+			guildName := e.TopicPartition.Topic
+			key := string(e.Key)
+			username := strings.Split(key, "-")[0]
+			channelName := strings.Split(key, "-")[1]
+			timeStamp := e.Timestamp
+			err := db.ExecQuery("INSERT INTO messages (guild_name, user_name, channel_name, user_message, timestamp) VALUES (?, ?, ?, ?, ?)", guildName, username, channelName, string(e.Value), timeStamp)
+			if err != nil {
+				log.Println(err)
+			}
 		case kafka.Error:
 			log.Println("Encounter kafka error", e)
 		}
