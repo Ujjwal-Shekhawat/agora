@@ -4,6 +4,7 @@ go 1.23.1
 
 require (
 	github.com/gocql/gocql v1.6.0
+	github.com/gogo/protobuf v1.3.2
 	go.mongodb.org/mongo-driver v1.17.0
 	google.golang.org/grpc v1.66.2
 )

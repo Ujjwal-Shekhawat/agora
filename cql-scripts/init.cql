@@ -8,5 +8,5 @@ CREATE TABLE IF NOT EXISTS messages (
     channel_name TEXT,
     user_message TEXT,
     timestamp TIMESTAMP,
-    PRIMARY KEY ((guild_name, channel_name), user_name)
-);
+    PRIMARY KEY ((guild_name, channel_name), timestamp)
+) WITH CLUSTERING ORDER BY (timestamp DESC);

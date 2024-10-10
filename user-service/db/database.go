@@ -1,6 +1,8 @@
 package db
 
 import (
+	"fmt"
+	"reflect"
 	"strings"
 	"sync"
 	"time"
@@ -71,9 +73,42 @@ func ExecQuery(query string, queryParams ...interface{}) error {
 	return nil
 }
 
-func ExecQueryWithResponse(r map[string]interface{}, query string, queryParams ...interface{}) error {
-	if err := session.session.Query(query, queryParams...).MapScan(r); err != nil {
+func ExecQueryWithResponse(query string, responseStructure interface{}, queryParams ...interface{}) error {
+	// if err := session.session.Query(query, queryParams...).MapScan(r); err != nil {
+	// 	return nil, err
+	// }
+
+	refl := reflect.ValueOf(responseStructure)
+	if refl.Kind() != reflect.Ptr || refl.Elem().Kind() != reflect.Slice {
+		return fmt.Errorf("responmse struct should be a reference to a slice only")
+	}
+
+	iter := session.session.Query(query, queryParams...).Iter()
+	defer iter.Close()
+
+	for {
+		rStructType := refl.Elem().Type().Elem()
+		rStruct := reflect.New(rStructType).Elem()
+
+		scanVars := make([]interface{}, rStruct.NumField())
+		for i := 0; i < rStruct.NumField(); i++ {
+			scanVars[i] = rStruct.Field(i).Addr().Interface()
+		}
+
+		if !iter.Scan(scanVars...) {
+			if err := iter.Close(); err != nil {
+				return err
+			}
+			break
+		}
+
+		refl.Elem().Set(reflect.Append(refl.Elem(), rStruct))
+
+	}
+
+	if err := iter.Close(); err != nil {
 		return err
 	}
+
 	return nil
 }
