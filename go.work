@@ -4,4 +4,5 @@ use (
 	./gateway-service
 	./proto
 	./user-service
+	./messaging_service
 )

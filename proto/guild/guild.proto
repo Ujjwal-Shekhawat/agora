@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "google/protobuf/timestamp.proto";
+
 package guild_proto;
 
 option go_package = "./;proto";
@@ -9,6 +11,7 @@ service GuildService {
     rpc GetGuild(Guild) returns (GuildResponse);
     rpc JoinGuild(GuildMember) returns (ServerResponse);
     rpc LeaveGuild(GuildMember) returns (ServerResponse);
+    rpc GetMessages(GuildMessagesRequest) returns (GuildMessagesResponse);
 }
 
 message Guild {
@@ -30,4 +33,19 @@ message ServerResponse {
 message GuildMember {
     string name = 1;
     string guild_name = 2;
+}
+
+message GuildMessagesRequest {
+    string name = 1;
+    string channel = 2;
+}
+
+message GuildMessagesResponse {
+    repeated GuildMessageFormat messages = 1;
+}
+
+message GuildMessageFormat {
+    string key = 1;
+    string value = 2;
+    google.protobuf.Timestamp timestamp = 3;
 }

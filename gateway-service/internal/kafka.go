@@ -4,14 +4,16 @@ import (
 	"fmt"
 	"gateway_service/config"
 	"log"
+	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
 type KafkaConsumerEvent struct {
-	Key     string
-	Message string
-	err     error
+	Key       string
+	Message   string
+	TimeStamp time.Time
+	err       error
 }
 
 type kafkaHandler struct {
@@ -61,7 +63,7 @@ func KafkaConsumer(groupId string) (*kafka.Consumer, error) {
 	consumerconfig := &kafka.ConfigMap{
 		"bootstrap.servers": cfg.KafkaBrokers,
 		"group.id":          groupId,
-		"auto.offset.reset": "earliest",
+		"auto.offset.reset": "latest",
 	}
 
 	kconsumer, err := kafka.NewConsumer(consumerconfig)
@@ -124,7 +126,7 @@ func ConsumerTopic(consumer *kafka.Consumer, topic string, exit chan struct{}) (
 				switch e := events.(type) {
 				case *kafka.Message:
 					fmt.Printf("Message received: %s\n", string(e.Value))
-					messages <- KafkaConsumerEvent{Key: string(e.Key), Message: string(e.Value), err: nil}
+					messages <- KafkaConsumerEvent{Key: string(e.Key), Message: string(e.Value), TimeStamp: e.Timestamp, err: nil}
 				case kafka.Error:
 					fmt.Printf("Error occurred: %v\n", e)
 					messages <- KafkaConsumerEvent{Message: "", err: e}

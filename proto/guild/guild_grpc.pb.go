@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v5.28.2
-// source: guild/guild.proto
+// source: guild.proto
 
 package proto
 
@@ -26,6 +26,7 @@ type GuildServiceClient interface {
 	GetGuild(ctx context.Context, in *Guild, opts ...grpc.CallOption) (*GuildResponse, error)
 	JoinGuild(ctx context.Context, in *GuildMember, opts ...grpc.CallOption) (*ServerResponse, error)
 	LeaveGuild(ctx context.Context, in *GuildMember, opts ...grpc.CallOption) (*ServerResponse, error)
+	GetMessages(ctx context.Context, in *GuildMessagesRequest, opts ...grpc.CallOption) (*GuildMessagesResponse, error)
 }
 
 type guildServiceClient struct {
@@ -72,6 +73,15 @@ func (c *guildServiceClient) LeaveGuild(ctx context.Context, in *GuildMember, op
 	return out, nil
 }
 
+func (c *guildServiceClient) GetMessages(ctx context.Context, in *GuildMessagesRequest, opts ...grpc.CallOption) (*GuildMessagesResponse, error) {
+	out := new(GuildMessagesResponse)
+	err := c.cc.Invoke(ctx, "/guild_proto.GuildService/GetMessages", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // GuildServiceServer is the server API for GuildService service.
 // All implementations must embed UnimplementedGuildServiceServer
 // for forward compatibility
@@ -80,6 +90,7 @@ type GuildServiceServer interface {
 	GetGuild(context.Context, *Guild) (*GuildResponse, error)
 	JoinGuild(context.Context, *GuildMember) (*ServerResponse, error)
 	LeaveGuild(context.Context, *GuildMember) (*ServerResponse, error)
+	GetMessages(context.Context, *GuildMessagesRequest) (*GuildMessagesResponse, error)
 	mustEmbedUnimplementedGuildServiceServer()
 }
 
@@ -98,6 +109,9 @@ func (UnimplementedGuildServiceServer) JoinGuild(context.Context, *GuildMember) 
 }
 func (UnimplementedGuildServiceServer) LeaveGuild(context.Context, *GuildMember) (*ServerResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method LeaveGuild not implemented")
+}
+func (UnimplementedGuildServiceServer) GetMessages(context.Context, *GuildMessagesRequest) (*GuildMessagesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetMessages not implemented")
 }
 func (UnimplementedGuildServiceServer) mustEmbedUnimplementedGuildServiceServer() {}
 
@@ -184,6 +198,24 @@ func _GuildService_LeaveGuild_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _GuildService_GetMessages_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GuildMessagesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GuildServiceServer).GetMessages(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/guild_proto.GuildService/GetMessages",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GuildServiceServer).GetMessages(ctx, req.(*GuildMessagesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // GuildService_ServiceDesc is the grpc.ServiceDesc for GuildService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -207,7 +239,11 @@ var GuildService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "LeaveGuild",
 			Handler:    _GuildService_LeaveGuild_Handler,
 		},
+		{
+			MethodName: "GetMessages",
+			Handler:    _GuildService_GetMessages_Handler,
+		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "guild/guild.proto",
+	Metadata: "guild.proto",
 }

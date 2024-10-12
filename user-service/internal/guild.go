@@ -4,8 +4,10 @@ import (
 	"context"
 	"log"
 	proto "proto/guild"
+	"time"
 	"user_service/db"
 
+	"github.com/gogo/protobuf/types"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -117,4 +119,35 @@ func (s *guild_server) JoinGuild(ctx context.Context, guild *proto.GuildMember) 
 
 func (s *guild_server) LeaveGuild(ctx context.Context, guild *proto.GuildMember) (*proto.ServerResponse, error) {
 	return nil, nil
+}
+
+func (s *guild_server) GetMessages(ctx context.Context, messageRequest *proto.GuildMessagesRequest) (*proto.GuildMessagesResponse, error) {
+	response_proto := &proto.GuildMessagesResponse{
+		Messages: []*proto.GuildMessageFormat{},
+	}
+
+	messages := &[]struct {
+		UserName  string
+		Message   string
+		Timestamp time.Time
+	}{}
+	err := db.ExecQueryWithResponse("select user_name, user_message, timestamp from messages where guild_name = 'guild-FairyTale' and channel_name='general' order by timestamp desc limit 100;", messages)
+	if err != nil {
+		log.Println(err)
+		return nil, status.Error(codes.Aborted, "Well some error occured")
+	}
+
+	for _, message := range *messages {
+		t, err := types.TimestampProto(message.Timestamp)
+		if err != nil {
+			return nil, status.Error(codes.Internal, "Timestamp issue please check")
+		}
+		response_proto.Messages = append(response_proto.Messages, &proto.GuildMessageFormat{
+			Key:       message.UserName,
+			Value:     message.Message,
+			Timestamp: t,
+		})
+	}
+
+	return response_proto, nil
 }

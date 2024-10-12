@@ -50,3 +50,15 @@ func (c *ServiceClientStruct) JoinGuild(guildMember *gproto.GuildMember) (*gprot
 
 	return res, nil
 }
+
+func (c *ServiceClientStruct) GetMessages(guildMessageRequest *gproto.GuildMessagesRequest) (*gproto.GuildMessagesResponse, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	res, err := c.guild.GetMessages(ctx, guildMessageRequest)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
