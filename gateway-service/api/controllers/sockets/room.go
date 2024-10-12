@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	proto "proto/guild"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -39,9 +40,9 @@ func createRoom(name string) *Room {
 	return &Room{
 		name:       name,
 		clients:    make(map[*Client]bool),
-		broadcast:  make(chan *Message),
-		register:   make(chan *Client),
-		unregister: make(chan *Client),
+		broadcast:  make(chan *Message, 1000),
+		register:   make(chan *Client, 1000),
+		unregister: make(chan *Client, 1000),
 	}
 }
 
@@ -120,6 +121,7 @@ func (r *Room) run(s *SocketController) {
 						break
 					}
 				}
+				slices.Reverse(dbMessages)
 			}
 
 			for _, v := range dbMessages {
