@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func (c *ServiceClientStruct) GetUserDetails(name string) (*uproto.ServerResponse, error) {
+func (c *ServiceClientStruct) GetUserDetails(name string) (*uproto.UserResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 

@@ -36,7 +36,7 @@ func (controller *UserController) getUserInfo(w http.ResponseWriter, r *http.Req
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	response := map[string]interface{}{"message": pres.Message, "status": http.StatusOK}
+	response := map[string]interface{}{"name": pres.Name, "joined_guilds": pres.JoinedGuilds, "status": http.StatusOK}
 	json.NewEncoder(w).Encode(response)
 }
 

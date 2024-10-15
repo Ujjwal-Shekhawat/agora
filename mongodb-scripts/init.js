@@ -15,6 +15,7 @@ db.createCollection("users", {
         $jsonSchema: {
             bsonType: "object",
             required: ["username", "email", "password"],
+            additionalProperties: false,
             properties: {
                 username: {
                     bsonType: "string",
@@ -28,11 +29,11 @@ db.createCollection("users", {
                     bsonType: "string",
                     description: "must be a string and is required"
                 },
-                guildIds: {
+                guildNames: {
                     bsonType: "array",
                     items: {
-                        bsonType: "objectId",
-                        description: "must be an array of ObjectIds representing guilds the user belongs to"
+                        bsonType: "string",
+                        description: "must be an array of GuildNames representing guilds the user belongs to"
                     }
                 }
             }
@@ -60,6 +61,7 @@ db.createCollection("guilds", {
         $jsonSchema: {
             bsonType: "object",
             required: ["name"],
+            additionalProperties: false,
             properties: {
                 name: {
                     bsonType: "string",

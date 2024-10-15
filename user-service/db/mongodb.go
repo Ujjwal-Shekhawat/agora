@@ -132,11 +132,21 @@ func MongoJoinGuild(user, guild string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	update := bson.D{
+	updateGuild := bson.D{
 		{Key: "$addToSet", Value: bson.D{{Key: "users", Value: user}}},
 	}
 
-	res := mongodb.client.Database("main_dab").Collection("guilds").FindOneAndUpdate(ctx, bson.D{{Key: "name", Value: guild}}, update)
+	updateUser := bson.D{
+		{Key: "$addToSet", Value: bson.D{{Key: "guildNames", Value: guild}}},
+	}
+
+	res := mongodb.client.Database("main_dab").Collection("guilds").FindOneAndUpdate(ctx, bson.D{{Key: "name", Value: guild}}, updateGuild)
+	if res.Err() != nil {
+		log.Println(res.Err())
+		return res.Err()
+	}
+
+	res = mongodb.client.Database("main_dab").Collection("users").FindOneAndUpdate(ctx, bson.D{{Key: "username", Value: user}}, updateUser)
 	if res.Err() != nil {
 		log.Println(res.Err())
 		return res.Err()

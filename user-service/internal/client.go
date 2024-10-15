@@ -6,6 +6,7 @@ import (
 	proto "proto/user"
 	"user_service/db"
 
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -14,7 +15,7 @@ type user_server struct {
 	proto.UnimplementedUserServiceServer
 }
 
-func (s *user_server) GetUser(ctx context.Context, in *proto.GetUserReq) (*proto.ServerResponse, error) {
+func (s *user_server) GetUser(ctx context.Context, in *proto.GetUserReq) (*proto.UserResponse, error) {
 
 	log.Println("Finding user", in.Name)
 	res := db.MongoGetUser(in.Name)
@@ -23,9 +24,23 @@ func (s *user_server) GetUser(ctx context.Context, in *proto.GetUserReq) (*proto
 		return nil, status.Errorf(codes.NotFound, "User not found with name %s", in.Name)
 	}
 
-	return &proto.ServerResponse{
-		Message:    "User id: " + res["username"].(string) + " User email: " + res["email"].(string),
-		StatusCode: 0,
+	joinedGuilds := []string{}
+	guilds, ok := res["guildNames"].(primitive.A)
+	if ok {
+		for _, v := range guilds {
+			guild, ok := v.(string)
+			if !ok {
+				return nil, status.Error(codes.Internal, "Internal Server Error")
+			}
+			joinedGuilds = append(joinedGuilds, guild)
+		}
+	} else {
+		return nil, status.Error(codes.Internal, "Internal Server Error")
+	}
+
+	return &proto.UserResponse{
+		Name:         in.Name,
+		JoinedGuilds: joinedGuilds,
 	}, nil
 }
 

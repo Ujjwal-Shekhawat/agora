@@ -23,7 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type UserServiceClient interface {
 	Login(ctx context.Context, in *LoginReq, opts ...grpc.CallOption) (*ServerResponse, error)
-	GetUser(ctx context.Context, in *GetUserReq, opts ...grpc.CallOption) (*ServerResponse, error)
+	GetUser(ctx context.Context, in *GetUserReq, opts ...grpc.CallOption) (*UserResponse, error)
 	CreateUser(ctx context.Context, in *User, opts ...grpc.CallOption) (*ServerResponse, error)
 }
 
@@ -44,8 +44,8 @@ func (c *userServiceClient) Login(ctx context.Context, in *LoginReq, opts ...grp
 	return out, nil
 }
 
-func (c *userServiceClient) GetUser(ctx context.Context, in *GetUserReq, opts ...grpc.CallOption) (*ServerResponse, error) {
-	out := new(ServerResponse)
+func (c *userServiceClient) GetUser(ctx context.Context, in *GetUserReq, opts ...grpc.CallOption) (*UserResponse, error) {
+	out := new(UserResponse)
 	err := c.cc.Invoke(ctx, "/user_proto.UserService/GetUser", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -67,7 +67,7 @@ func (c *userServiceClient) CreateUser(ctx context.Context, in *User, opts ...gr
 // for forward compatibility
 type UserServiceServer interface {
 	Login(context.Context, *LoginReq) (*ServerResponse, error)
-	GetUser(context.Context, *GetUserReq) (*ServerResponse, error)
+	GetUser(context.Context, *GetUserReq) (*UserResponse, error)
 	CreateUser(context.Context, *User) (*ServerResponse, error)
 	mustEmbedUnimplementedUserServiceServer()
 }
@@ -79,7 +79,7 @@ type UnimplementedUserServiceServer struct {
 func (UnimplementedUserServiceServer) Login(context.Context, *LoginReq) (*ServerResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Login not implemented")
 }
-func (UnimplementedUserServiceServer) GetUser(context.Context, *GetUserReq) (*ServerResponse, error) {
+func (UnimplementedUserServiceServer) GetUser(context.Context, *GetUserReq) (*UserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUser not implemented")
 }
 func (UnimplementedUserServiceServer) CreateUser(context.Context, *User) (*ServerResponse, error) {
