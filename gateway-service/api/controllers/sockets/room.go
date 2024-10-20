@@ -152,6 +152,15 @@ func (r *Room) run(s *SocketController) {
 						delete(r.clients, client)
 						close(client.send)
 					}
+				} else {
+					select {
+					case client.send <- []byte("You" + ": " + message.Message):
+					default:
+						log.Printf("Client %s is unable to receive message, disconnecting.", client.id)
+
+						delete(r.clients, client)
+						close(client.send)
+					}
 				}
 			}
 		default:
